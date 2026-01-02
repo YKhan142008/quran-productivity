@@ -34,6 +34,17 @@ export async function getSurahs(): Promise<Surah[]> {
   }
 }
 
+export async function getSurah(surahNumber: number): Promise<Surah | null> {
+  try {
+    const res = await fetch(`${API_BASE}/surah/${surahNumber}`);
+    const data = await res.json();
+    return data.data;
+  } catch (error) {
+    console.error(`Failed to fetch surah ${surahNumber}:`, error);
+    return null;
+  }
+}
+
 export async function getAyahCount(surahNumber: number): Promise<number> {
   try {
     const res = await fetch(`${API_BASE}/surah/${surahNumber}`);

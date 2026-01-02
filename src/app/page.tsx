@@ -21,7 +21,7 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {surahs.map((surah) => (
           <Link key={surah.number} href={`/surah/${surah.number}`}>
-            <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-100">
+            <div className="card">
               <h2 className="text-xl font-bold">{surah.name}</h2>
               <p className="text-gray-500">{surah.englishName}</p>
             </div>
