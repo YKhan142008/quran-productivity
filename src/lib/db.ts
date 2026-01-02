@@ -1,4 +1,6 @@
-// lib/db.ts
+
+import { getDb } from './db.js';
+import { v4 as uuidv4 } from 'uuid';
 
 export type User = {
   id: string;
@@ -33,116 +35,123 @@ export type Goal = {
   createdAt: Date;
 };
 
-// Mock Data Store
-let users: User[] = [];
-let sessions: Session[] = [];
-let goals: Goal[] = [];
-
-// Helper to save to localStorage
-const saveToStorage = () => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('qp_users', JSON.stringify(users));
-    localStorage.setItem('qp_sessions', JSON.stringify(sessions));
-    localStorage.setItem('qp_goals', JSON.stringify(goals));
-  }
-};
-
-// Helper to load from localStorage
-const loadFromStorage = () => {
-  if (typeof window !== 'undefined') {
-    const storedUsers = localStorage.getItem('qp_users');
-    const storedSessions = localStorage.getItem('qp_sessions');
-    const storedGoals = localStorage.getItem('qp_goals');
-
-    if (storedUsers) users = JSON.parse(storedUsers);
-    if (storedSessions) sessions = JSON.parse(storedSessions);
-    if (storedGoals) goals = JSON.parse(storedGoals);
-  }
-};
-
-// Initialize
-loadFromStorage();
-
 export const db = {
   user: {
     findUnique: async ({ where }: { where: { email: string } }) => {
-      loadFromStorage(); // Ensure fresh data
-      return users.find((u) => u.email === where.email) || null;
+      const db = await getDb();
+      return db.get('SELECT * FROM User WHERE email = ?', where.email);
     },
     create: async ({ data }: { data: any }) => {
+      const db = await getDb();
       const newUser = {
-        ...data,
-        id: Math.random().toString(36).substring(7),
+        id: uuidv4(),
+        email: data.email,
+        name: data.name || null,
         emailNotifications: data.emailNotifications ?? false,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
-      users.push(newUser);
-      saveToStorage();
+      await db.run(
+        'INSERT INTO User (id, email, name, emailNotifications, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)',
+        newUser.id,
+        newUser.email,
+        newUser.name,
+        newUser.emailNotifications,
+        newUser.createdAt.toISOString(),
+        newUser.updatedAt.toISOString()
+      );
       return newUser;
     },
     findMany: async ({ where }: { where: any }) => {
-      loadFromStorage();
+      const db = await getDb();
       if (!where || Object.keys(where).length === 0) {
-        return users;
+        return db.all('SELECT * FROM User');
       }
-      return users.filter((u) => {
-        return Object.keys(where).every((key) => (u as any)[key] === where[key]);
-      });
+      const conditions = Object.keys(where).map(key => `${key} = ?`).join(' AND ');
+      const values = Object.values(where);
+      return db.all(`SELECT * FROM User WHERE ${conditions}`, ...values);
     },
   },
   session: {
     create: async ({ data }: { data: any }) => {
-      const newSession = { ...data, id: Math.random().toString(36).substring(7), date: new Date() };
-      sessions.push(newSession);
-      saveToStorage();
+      const db = await getDb();
+      const newSession = {
+        id: uuidv4(),
+        userId: data.userId,
+        surah: data.surah,
+        startAyah: data.startAyah,
+        endAyah: data.endAyah,
+        startPage: data.startPage || null,
+        endPage: data.endPage || null,
+        date: new Date(),
+        duration: data.duration || null,
+      };
+      await db.run(
+        'INSERT INTO Session (id, userId, surah, startAyah, endAyah, startPage, endPage, date, duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        newSession.id,
+        newSession.userId,
+        newSession.surah,
+        newSession.startAyah,
+        newSession.endAyah,
+        newSession.startPage,
+        newSession.endPage,
+        newSession.date.toISOString(),
+        newSession.duration
+      );
       return newSession;
     },
     findMany: async ({ where }: { where: any }) => {
-      loadFromStorage();
-      return sessions.filter((s) => s.userId === where.userId);
+      const db = await getDb();
+      return db.all('SELECT * FROM Session WHERE userId = ?', where.userId);
     },
   },
   goal: {
     create: async ({ data }: { data: any }) => {
+      const db = await getDb();
       const newGoal = {
-        ...data,
-        id: Math.random().toString(36).substring(7),
-        lastNotificationSent: data.lastNotificationSent ?? null,
-        notificationCount: data.notificationCount ?? 0,
-        createdAt: new Date()
+        id: uuidv4(),
+        userId: data.userId,
+        type: data.type,
+        targetAmount: data.targetAmount || null,
+        deadline: data.deadline || null,
+        status: 'ACTIVE',
+        lastNotificationSent: null,
+        notificationCount: 0,
+        createdAt: new Date(),
       };
-      goals.push(newGoal);
-      saveToStorage();
+      await db.run(
+        'INSERT INTO Goal (id, userId, type, targetAmount, deadline, status, lastNotificationSent, notificationCount, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        newGoal.id,
+        newGoal.userId,
+        newGoal.type,
+        newGoal.targetAmount,
+        newGoal.deadline ? newGoal.deadline.toISOString() : null,
+        newGoal.status,
+        newGoal.lastNotificationSent,
+        newGoal.notificationCount,
+        newGoal.createdAt.toISOString()
+      );
       return newGoal;
     },
     findMany: async ({ where }: { where: any }) => {
-      loadFromStorage();
-      return goals.filter((g) => g.userId === where.userId);
+      const db = await getDb();
+      return db.all('SELECT * FROM Goal WHERE userId = ?', where.userId);
     },
     findFirst: async ({ where }: { where: any }) => {
-      loadFromStorage();
-      return goals.find((g) => g.userId === where.userId && g.type === where.type) || null;
+      const db = await getDb();
+      return db.get('SELECT * FROM Goal WHERE userId = ? AND type = ?', where.userId, where.type);
     },
     update: async ({ where, data }: { where: any; data: any }) => {
-      loadFromStorage();
-      const index = goals.findIndex((g) => g.id === where.id);
-      if (index !== -1) {
-        goals[index] = { ...goals[index], ...data };
-        saveToStorage();
-        return goals[index];
-      }
-      return null;
+      const db = await getDb();
+      const fields = Object.keys(data).map(key => `${key} = ?`).join(', ');
+      const values = [...Object.values(data), where.id];
+      await db.run(`UPDATE Goal SET ${fields} WHERE id = ?`, ...values);
+      return db.get('SELECT * FROM Goal WHERE id = ?', where.id);
     },
     delete: async ({ where }: { where: any }) => {
-      loadFromStorage();
-      const index = goals.findIndex((g) => g.id === where.id);
-      if (index !== -1) {
-        goals.splice(index, 1);
-        saveToStorage();
-        return true;
-      }
-      return false;
+      const db = await getDb();
+      const result = await db.run('DELETE FROM Goal WHERE id = ?', where.id);
+      return result.changes > 0;
     },
   },
 };

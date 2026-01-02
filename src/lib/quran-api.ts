@@ -11,6 +11,18 @@ export type Surah = {
   revelationType: string;
 };
 
+export type Ayah = {
+  number: number;
+  text: string;
+  numberInSurah: number;
+  juz: number;
+  manzil: number;
+  page: number;
+  ruku: number;
+  hizbQuarter: number;
+  sajda: boolean;
+};
+
 export async function getSurahs(): Promise<Surah[]> {
   try {
     const res = await fetch(`${API_BASE}/surah`);
@@ -41,5 +53,16 @@ export async function getPageForAyah(surah: number, ayah: number): Promise<numbe
   } catch (error) {
     console.error('Failed to fetch page number:', error);
     return null;
+  }
+}
+
+export async function getAyahsOfSurah(surahNumber: number): Promise<Ayah[]> {
+  try {
+    const res = await fetch(`${API_BASE}/surah/${surahNumber}`);
+    const data = await res.json();
+    return data.data.ayahs;
+  } catch (error) {
+    console.error(`Failed to fetch ayahs for surah ${surahNumber}:`, error);
+    return [];
   }
 }

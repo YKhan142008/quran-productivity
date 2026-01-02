@@ -2,6 +2,7 @@
   "name": "quran-productivity",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,21 +10,23 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@prisma/client": "^7.1.0",
     "deep-email-validator": "^0.1.21",
     "next": "16.0.10",
     "pg": "^8.16.3",
     "react": "19.2.1",
     "react-dom": "19.2.1",
-    "resend": "^6.6.0"
+    "resend": "^6.6.0",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
-    "prisma": "^7.1.0",
     "typescript": "^5"
   }
 }
